@@ -43,3 +43,13 @@ def create_filter_bank(sample_rate, nbanks, nfft):
     :return: numpy.ndarray of nfft sized filters
     """
     pass
+
+
+def pre_emphasis_filter(signal, pre_emphasis=0.97):
+    """Returns the signal with a pre emphasis filter applied.
+
+    :param signal: The signal to apply the filter to
+    :param pre_emphasis: The pre_emphasis alpha value
+    :return: resulting signal
+    """
+    return np.append(signal[0], signal[1:] - pre_emphasis * signal[:-1])

@@ -28,10 +28,6 @@ signal = (signal[:, 0] + signal[:, 1]) / 2.0
 # take first 3s
 signal = signal[:int(3*sample_rate)]
 
-# apply pre-emphasis filter
-# pre_emphasis = 0.97
-# signal = np.append(signal[0], signal[1:] - pre_emphasis * signal[:-1])
-
 # convert each to frequency domain and apply hamming window
 # w = lambda n, size: 0.53836 - 0.46164*np.cos(2*np.pi*n / (size - 1))
 
