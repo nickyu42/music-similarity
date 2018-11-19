@@ -9,13 +9,16 @@ import scipy.io.wavfile
 
 from processing import convert_to_frame
 
-AUDIO_FILE = 'crossing field.wav'
+AUDIO_FILE = 'data/crossing field.wav'
 
 # The amount of ms a frame should be
 FRAME_SIZE = 0.025
 
 # The frame overlap
 FRAME_OVERLAP = 0.010
+
+# The number of cepstral coefficients to calculate
+N_COEF = 26
 
 sample_rate, signal = scipy.io.wavfile.read(AUDIO_FILE)
 
@@ -34,7 +37,7 @@ signal = signal[:int(3*sample_rate)]
 signal = convert_to_frame(signal, frame_size, frame_step)
 
 # convert to complex numbers
-nfft = signal.shape[0] // 2 + 1
+nfft = np.floor(signal.shape[0] / 2 + 1)
 result_signal = np.empty((nfft, signal.shape[1]), dtype=complex)
 
 for i in range(signal.shape[1]):
