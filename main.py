@@ -3,11 +3,13 @@ Author: Nick Yu
 Date created: 11/11/2018
 """
 
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile
+from scipy.fftpack import dct
 
-from processing import convert_to_frame
+from processing import convert_to_frame, create_filter_bank
 
 AUDIO_FILE = 'data/crossing field.wav'
 
@@ -19,6 +21,7 @@ FRAME_OVERLAP = 0.010
 
 # The number of cepstral coefficients to calculate
 N_COEF = 26
+N_CEPS = 12
 
 sample_rate, signal = scipy.io.wavfile.read(AUDIO_FILE)
 
@@ -37,14 +40,23 @@ signal = signal[:int(3*sample_rate)]
 signal = convert_to_frame(signal, frame_size, frame_step)
 
 # convert to complex numbers
-nfft = np.floor(signal.shape[0] / 2 + 1)
-result_signal = np.empty((nfft, signal.shape[1]), dtype=complex)
+nfft = signal.shape[0]
+nfft_unique = math.floor(nfft / 2 + 1)
+result_signal = np.empty((nfft_unique, signal.shape[1]), dtype=complex)
 
 for i in range(signal.shape[1]):
     frame = signal[:, i] * np.hamming(frame_size)
-    result_signal[:, i] = np.fft.fft(frame)[:nfft]
+    result_signal[:, i] = np.abs(np.fft.fft(frame)[:nfft_unique])
 
-plt.pcolormesh(abs(result_signal))
+# compute MFCCs
+filterbanks = create_filter_bank(sample_rate, N_COEF, nfft)
+
+filterbanks = np.dot(result_signal.T, filterbanks.T).T
+
+# TODO
+mfcc = dct(np.log10(filterbanks), axis=0)[1:N_CEPS + 1]
+
+plt.pcolormesh(mfcc)
 plt.show()
 
 
