@@ -56,7 +56,7 @@ filterbanks = np.dot(result_signal.T, filterbanks.T).T
 # TODO
 mfcc = dct(np.log10(filterbanks), axis=0)[1:N_CEPS + 1]
 
-plt.pcolormesh(mfcc)
+plt.pcolormesh(np.real(mfcc))
 plt.show()
 
 
