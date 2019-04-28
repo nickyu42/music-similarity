@@ -1,3 +1,7 @@
+"""
+Author: Nick Yu
+Date created: 1/3/2019
+"""
 import praw
 import json
 import bs4
@@ -46,13 +50,19 @@ def get_wiki_links(wiki_page, year):
     :param year: which year of anime to scrape from the wiki
     :return: list of all headers and table objects in order
     """
-    soup = bs4.BeautifulSoup(wiki_page[year].content_html)
+    soup = bs4.BeautifulSoup(wiki_page[year].content_html, 'html.parser')
     wiki = soup.find(class_='md wiki')
 
     return wiki.find_all(['h3', 'table'])
 
 
 def extract_songs(reddit, year):
+    """
+    Extracts links for all ops/eds within a single wiki page
+    :param reddit: praw instance
+    :param year: which wiki page year to scrape
+    :return: dict with key as anime name and list of song, link pairs
+    """
     wiki_page = reddit.subreddit('AnimeThemes').wiki
     links = get_wiki_links(wiki_page, year)
 

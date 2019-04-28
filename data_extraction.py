@@ -1,6 +1,12 @@
+"""
+Author: Nick Yu
+Date created: 1/3/2019
+"""
 import pandas as pd
 import pickle
 import bs4
+import requests
+import time
 
 import scraper
 
@@ -9,11 +15,17 @@ COLUMNS = ['title', 'title_english', 'title_japanese', 'genre', 'opening_theme',
 
 # sample count per label
 # N shounen/ N shoujo
-SAMPLE_SIZE = 100
+SAMPLE_SIZE = 1
+
+WAIT_T = 0
 
 MAL_PATH = 'data/AnimeList.csv'
 PICKLE_PATH = 'data/animethemes_wiki.pickle'
 CRED_PATH = 'data/credentials.json'
+LOG_PATH = 'data/log.txt'
+SAVE_PATH = 'data/songs/'
+
+USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36'
 
 
 def filter_genre(genre):
@@ -33,8 +45,14 @@ def filter_genre(genre):
     return wrap
 
 
-def find_samples(df, sample_size):
-    """Sample anime in df that have a link on /r/AnimeThemes"""
+def find_samples(df, sample_size, existing):
+    """
+    Sample anime in df that have a link on /r/AnimeThemes
+    :param df: dataframe to sample from
+    :param sample_size: amount of samples to return
+    :param existing: dict with downloadable links
+    :return: list of samples
+    """
     result = []
 
     count = 0
@@ -42,8 +60,8 @@ def find_samples(df, sample_size):
         row = df.sample()
 
         for t in ('title', 'title_english', 'title_japanese'):
-            if row[t].values[0] in existing_links:
-                result.append(row[t])
+            if row[t].values[0] in existing:
+                result.append(row[t].values[0])
                 count += 1
                 break
 
@@ -80,9 +98,48 @@ for link in wiki.find_all('p')[1:]:
     # as we don't care which version of op is used as long as both have same genres
     existing_links[name] = link.get('href')
 
-shounen_samples = find_samples(df_shounen, SAMPLE_SIZE)
-shoujo_samples = find_samples(df_shoujo, SAMPLE_SIZE)
+shounen_samples = find_samples(df_shounen, SAMPLE_SIZE, existing_links)
+shoujo_samples = find_samples(df_shoujo, SAMPLE_SIZE, existing_links)
 
 reddit = scraper.create_praw(CRED_PATH)
 
 cached_pages = {}
+
+print('- Starting download -')
+
+with open(LOG_PATH, 'w') as log:
+    session = requests.Session()
+    session.headers = {'User-Agent': USER_AGENT}
+
+    for sample in shoujo_samples:
+        year = existing_links[sample].split('/')[-1][:4]
+
+        if year not in cached_pages:
+            print(f'Grabbing links from {year}')
+            cached_pages[year] = scraper.extract_songs(reddit, year)
+
+        song_table = cached_pages[year]
+
+        for song_type, link in song_table[sample]:
+
+            # filter OP
+            if song_type[:2] == 'OP':
+                print(f'- {sample} : {song_type}')
+
+                # download .webm
+                response = session.get(link)
+
+                video = response.content
+
+                with open(f'{SAVE_PATH}/{sample}', 'wb') as wf:
+                    wf.write(video)
+
+                log.write(f'[SUCCESS] {sample} {song_type} {link}')
+                break
+        else:
+            print(f'- No OP found for {sample}')
+            log.write(f'[FAILED]  {sample}')
+
+        if WAIT_T:
+            time.sleep(WAIT_T)
+
