@@ -7,6 +7,8 @@ import pickle
 import bs4
 import requests
 import time
+import sys
+from pathlib import Path
 
 import scraper
 
@@ -15,15 +17,15 @@ COLUMNS = ['title', 'title_english', 'title_japanese', 'genre', 'opening_theme',
 
 # sample count per label
 # N shounen/ N shoujo
-SAMPLE_SIZE = 1
+SAMPLE_SIZE = 200
 
-WAIT_T = 0
+WAIT_T = 1
 
 MAL_PATH = 'data/AnimeList.csv'
 PICKLE_PATH = 'data/animethemes_wiki.pickle'
 CRED_PATH = 'data/credentials.json'
-LOG_PATH = 'data/log.txt'
-SAVE_PATH = 'data/songs/'
+LOG_PATH = 'log.txt'
+SAVE_PATH = 'songs'
 
 USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36'
 
@@ -68,6 +70,13 @@ def find_samples(df, sample_size, existing):
     return result
 
 
+# get folder to save
+if len(sys.argv) == 1:
+    print('No save path provided')
+    sys.exit()
+
+path = Path(sys.argv[1])
+
 # Read in the MAL dataset
 mal_df = pd.read_csv(MAL_PATH, usecols=COLUMNS)
 
@@ -105,17 +114,18 @@ reddit = scraper.create_praw(CRED_PATH)
 
 cached_pages = {}
 
-print('- Starting download -')
+print(f'Saving to {path}')
+print('[Starting download]')
 
-with open(LOG_PATH, 'w') as log:
-    session = requests.Session()
-    session.headers = {'User-Agent': USER_AGENT}
+session = requests.Session()
+session.headers = {'User-Agent': USER_AGENT}
 
-    for sample in shoujo_samples:
-        year = existing_links[sample].split('/')[-1][:4]
+for i, sample in enumerate(shoujo_samples):
+    try:
+        year = existing_links[sample].split('/')[-1].split('#')[0]
 
         if year not in cached_pages:
-            print(f'Grabbing links from {year}')
+            print(f'[Grabbing links from {year}]')
             cached_pages[year] = scraper.extract_songs(reddit, year)
 
         song_table = cached_pages[year]
@@ -129,17 +139,26 @@ with open(LOG_PATH, 'w') as log:
                 # download .webm
                 response = session.get(link)
 
-                video = response.content
+                if response.status_code == 200:
+                    video = response.content
 
-                with open(f'{SAVE_PATH}/{sample}', 'wb') as wf:
-                    wf.write(video)
+                    with open(path / SAVE_PATH / (sample.strip() + '.webm'), 'wb') as wf:
+                        wf.write(video)
 
-                log.write(f'[SUCCESS] {sample} {song_type} {link}')
+                    result_string = f'[SUCCESS {i + 1}/{SAMPLE_SIZE}] {sample} {song_type} {link}\n'
+                else:
+                    result_string = f'[FAILED {i + 1}/{SAMPLE_SIZE}] {sample} {song_type} {link}\n'
+                
                 break
         else:
-            print(f'- No OP found for {sample}')
-            log.write(f'[FAILED]  {sample}')
+            result_string = f'[FAILED {i}/{SAMPLE_SIZE}]  {sample}'
+
+        result_string = result_string.encode('ascii', 'ignore')
+        print(result_string, end='')
 
         if WAIT_T:
             time.sleep(WAIT_T)
 
+    except Exception as e:
+        print(f'Unexpected error: {e}')
+    
