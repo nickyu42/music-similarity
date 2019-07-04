@@ -1,6 +1,8 @@
 """
 Author: Nick Yu
 Date created: 13/11/2018
+
+Module for processing audio
 """
 
 import numpy as np
@@ -9,10 +11,11 @@ import scipy.io.wavfile
 from scipy.fftpack import dct
 
 
-def convert_to_mfcc(audio_file, frame_size=0.025, frame_overlap=0.01, n_coeff=26, n_ceps=12):
+def convert_to_mfcc(audio_file, frames=None, frame_size=0.025, frame_overlap=0.01, n_coeff=26, n_ceps=12):
     """
     Converts given audio file to mfcc
     :param audio_file: location of audio file
+    :param frames: amount of frames to keep, if None keep all
     :param frame_size: the amount of ms a frame should be
     :param frame_overlap: the amount of ms a frame should overlap
     :param n_coeff: number of fourier coefficients to use
@@ -29,6 +32,9 @@ def convert_to_mfcc(audio_file, frame_size=0.025, frame_overlap=0.01, n_coeff=26
 
     signal = convert_to_frame(signal, frame_size, frame_step)
 
+    if frames and frames <= signal.shape[1]:
+        signal = signal[:, :frames]
+
     # convert to complex numbers
     nfft = signal.shape[0]
     nfft_unique = math.floor(nfft / 2 + 1)
@@ -43,7 +49,7 @@ def convert_to_mfcc(audio_file, frame_size=0.025, frame_overlap=0.01, n_coeff=26
 
     filterbanks = np.dot(result_signal.T, filterbanks.T).T
 
-    return dct(np.log10(filterbanks), axis=0)[1:n_ceps + 1]
+    return np.nan_to_num(dct(np.log10(filterbanks), axis=0)[1:n_ceps + 1])
 
 
 def convert_to_frame(signal, frame_length, frame_step):

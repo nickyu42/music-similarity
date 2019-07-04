@@ -1,6 +1,8 @@
 """
 Author: Nick Yu
 Date created: 1/3/2019
+
+Module for scraping and processing songs from /r/animethemes
 """
 import pandas as pd
 import pickle
@@ -161,4 +163,4 @@ for i, sample in enumerate(shoujo_samples):
 
     except Exception as e:
         print(f'Unexpected error: {e}')
-    
+

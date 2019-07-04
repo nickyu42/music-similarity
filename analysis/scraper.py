@@ -1,6 +1,8 @@
 """
 Author: Nick Yu
 Date created: 1/3/2019
+
+Module for scraping data from reddit
 """
 import praw
 import json
