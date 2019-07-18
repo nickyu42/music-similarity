@@ -16,7 +16,7 @@ def fit_gmm(mfcc, n_comp=20):
     :param n_comp: number of mixture components to fit on
     :return: flattened feature vector of weights, means and full covariance matrix
     """
-    mfcc = np.nan_to_num(mfcc.real)
+    mfcc = np.nan_to_num(mfcc.real).T
 
     gmix = mixture.GaussianMixture(n_components=n_comp, covariance_type='full')
     gmix.fit(mfcc)
@@ -26,7 +26,7 @@ def fit_gmm(mfcc, n_comp=20):
     # means         = (n_comp, n_feat)
     # covariances   = (n_comp, n_feat, n_feat)
     # assuming default values, n_comp = 20 and n_features = 12 mfcc features
-    features = gmix.weights_, gmix.means_, gmix.covariances_
+    features = gmix.weights_, gmix.means_, gmix.precisions_cholesky_
     return np.concatenate([f.flatten() for f in features])
 
 
@@ -41,11 +41,11 @@ def init_gmm(gmm_params, n_comp=20, n_feat=12):
     gmix = mixture.GaussianMixture(n_components=n_comp, covariance_type='full')
 
     # hacky method to bypass gmix._check_is_fitted()
-    gmix.fit(np.random.rand(n_comp, 12))
+    gmix.fit(np.random.rand(n_comp, n_feat))
 
     gmix.weights_ = gmm_params[:n_comp]
     gmix.means_ = np.reshape(gmm_params[n_comp:n_comp + n_comp*n_feat], (n_comp, n_feat))
-    gmix.covariances_ = np.reshape(gmm_params[n_comp + n_comp*n_feat:], (n_comp, n_feat, n_feat))
+    gmix.precisions_cholesky_ = np.reshape(gmm_params[n_comp + n_comp*n_feat:], (n_comp, n_feat, n_feat))
 
     return gmix
 
