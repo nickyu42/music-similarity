@@ -4,6 +4,7 @@ Date created: 1/3/2019
 
 Shounen/ Shoujo classifier
 """
+from typing import Callable
 import numpy as np
 from sklearn import mixture
 
@@ -49,6 +50,23 @@ def init_gmm(gmm_params, n_comp=20, n_feat=12):
     return gmix
 
 
+def calculate_distance(mfcc1: np.ndarray, mfcc2: np.ndarray, distance_measure: Callable) -> float:
+    """
+    Calculates distance based on given measure
+    :param mfcc1: mfcc frames of song 1
+    :param mfcc2: mfcc frames of song 2
+    :param distance_measure: measure to use
+    :return: 'distance' of given songs
+    """
+    gmix1 = mixture.GaussianMixture(n_components=20, covariance_type='diag')
+    gmix1.fit(np.nan_to_num(mfcc1.real).T)
+
+    gmix2 = mixture.GaussianMixture(n_components=20, covariance_type='diag')
+    gmix2.fit(np.nan_to_num(mfcc2.real).T)
+
+    return distance_measure(gmix1, gmix2)
+
+
 def gmm_js(gmm_p: mixture.GaussianMixture, gmm_q: mixture.GaussianMixture, sample_count=500):
     """
     Calculates Jensen-Shannon divergence of two gmm's
@@ -57,26 +75,26 @@ def gmm_js(gmm_p: mixture.GaussianMixture, gmm_q: mixture.GaussianMixture, sampl
     :param sample_count: number of monte carlo samples to use
     :return: Jensen-Shannon divergence
     """
-    X = gmm_p.sample(sample_count)[0]
-    log_p_X = gmm_p.score_samples(X)
-    log_q_X = gmm_q.score_samples(X)
-    log_mix_X = np.logaddexp(log_p_X, log_q_X)
+    x = gmm_p.sample(sample_count)[0]
+    log_p_x = gmm_p.score_samples(x)
+    log_q_x = gmm_q.score_samples(x)
+    log_mix_x = np.logaddexp(log_p_x, log_q_x)
 
-    Y = gmm_q.sample(sample_count)[0]
-    log_p_Y = gmm_p.score_samples(Y)
-    log_q_Y = gmm_q.score_samples(Y)
-    log_mix_Y = np.logaddexp(log_p_Y, log_q_Y)
+    y = gmm_q.sample(sample_count)[0]
+    log_p_y = gmm_p.score_samples(y)
+    log_q_y = gmm_q.score_samples(y)
+    log_mix_y = np.logaddexp(log_p_y, log_q_y)
 
     # black magic?
-    return (log_p_X.mean() - (log_mix_X.mean() - np.log(2))
-            + log_q_Y.mean() - (log_mix_Y.mean() - np.log(2))) / 2
+    return (log_p_x.mean() - (log_mix_x.mean() - np.log(2))
+            + log_q_y.mean() - (log_mix_y.mean() - np.log(2))) / 2
 
 
 def gmm_kl(gmm_p, gmm_q, sample_count=500):
-    X = gmm_p.sample(sample_count)[0]
-    log_p_X = gmm_p.score_samples(X)
-    log_q_X = gmm_q.score_samples(X)
-    return log_p_X.mean() - log_q_X.mean()
+    x = gmm_p.sample(sample_count)[0]
+    log_p_x = gmm_p.score_samples(x)
+    log_q_x = gmm_q.score_samples(x)
+    return log_p_x.mean() - log_q_x.mean()
 
 
 def gmm_symmetric_kl(gmm_p, gmm_q, sample_count=500):
