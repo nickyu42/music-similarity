@@ -1,4 +1,4 @@
-### Anime OP similarity
+### Music Similarity
 
 The goal of this project is to research how similar Shōnen/ Shōjo Anime openings are.  
 The system uses song signal level features to check the similarity of songs.
