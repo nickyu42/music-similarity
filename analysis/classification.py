@@ -8,6 +8,8 @@ from typing import Callable
 import numpy as np
 from sklearn import mixture
 
+from processing import convert_to_mfcc
+
 
 def fit_gmm(mfcc, n_comp=20):
     """
@@ -44,8 +46,10 @@ def init_gmm(gmm_params, n_comp=20, n_feat=12):
     gmix.fit(np.random.rand(n_comp, n_feat))
 
     gmix.weights_ = gmm_params[:n_comp]
-    gmix.means_ = np.reshape(gmm_params[n_comp:n_comp + n_comp*n_feat], (n_comp, n_feat))
-    gmix.precisions_cholesky_ = np.reshape(gmm_params[n_comp + n_comp*n_feat:], (n_comp, n_feat, n_feat))
+    gmix.means_ = np.reshape(
+        gmm_params[n_comp:n_comp + n_comp*n_feat], (n_comp, n_feat))
+    gmix.precisions_cholesky_ = np.reshape(
+        gmm_params[n_comp + n_comp*n_feat:], (n_comp, n_feat, n_feat))
 
     return gmix
 
@@ -107,4 +111,62 @@ def gmm_symmetric_kl(gmm_p, gmm_q, sample_count=500):
     :return: Kullback-Leibler divergence
     """
     return gmm_kl(gmm_p, gmm_q, sample_count=sample_count) + \
-           gmm_kl(gmm_q, gmm_p, sample_count=sample_count)
+        gmm_kl(gmm_q, gmm_p, sample_count=sample_count)
+
+
+class MusicSimModel:
+    """
+    Similarity model that is used for storage and prediction.
+    """
+
+    def __init__(self, gmm_parameters, classes, class_names, svc):
+        self.gmm_parameters = gmm_parameters
+        self.classes = classes
+        self.class_names = class_names
+        self.svc = svc
+
+        # initialize gmms in the event that the model is
+        # going to be used for prediction.
+        self.gmms = None
+        self.kernel_func = None
+
+    @staticmethod
+    def create_kernel(gamma: float = 0.1):
+        def kernel(js: float):
+            return np.exp(-gamma * js)
+
+        return np.vectorize(kernel)
+
+    def load(self):
+        """
+        Loads gaussian mixture models from `gmm_parameters` into memory.
+        """
+        self.gmms = list(map(init_gmm, self.gmm_parameters))
+        self.kernel = self.create_kernel()
+
+    def predict_file(self, x, n_comp=20):
+        if self.gmms is None:
+            self.load()
+
+        samples = np.empty((len(x), len(self.gmm_parameters)))
+        for i, sample in enumerate(x):
+            mfcc = convert_to_mfcc(sample)
+            mfcc = np.nan_to_num(mfcc.real).T
+
+            gmm = mixture.GaussianMixture(
+                n_components=n_comp, covariance_type='full')
+            gmm.fit(mfcc)
+
+            sims = list(map(lambda x: gmm_js(x, gmm), self.gmms))
+            samples[i, :] = self.kernel(sims).reshape(1, -1)
+
+        predict = self.svc.predict_proba(samples)
+
+        results = []
+        for sample in predict:
+            max_prob_index = np.argmax(sample)
+            print(max_prob_index)
+            predicted_class = self.class_names[max_prob_index]
+            results.append((sample[max_prob_index], predicted_class))
+
+        return results

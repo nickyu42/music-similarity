@@ -13,7 +13,7 @@ import numpy as np
 from sklearn import svm
 
 from processing import convert_to_mfcc
-from classification import gmm_js, fit_gmm, init_gmm
+from classification import gmm_js, fit_gmm, init_gmm, MusicSimModel
 
 
 def compute_gmm_parameters(songs: List[str]) -> List[np.ndarray]:
@@ -23,13 +23,7 @@ def compute_gmm_parameters(songs: List[str]) -> List[np.ndarray]:
     :param songs: list of paths to each song.
     :return: list of gmm parameters for each song.
     """
-    samples = []
-
-    for song_path in songs:
-        mfccs = convert_to_mfcc(song_path, frames=3000)
-        samples.append(fit_gmm(mfccs))
-
-    return samples
+    return list(map(lambda x: fit_gmm(convert_to_mfcc(x, frames=30000)), songs))
 
 
 def compute_gram_matrix(samples_gmm: List[np.ndarray]) -> np.ndarray:
@@ -44,14 +38,15 @@ def compute_gram_matrix(samples_gmm: List[np.ndarray]) -> np.ndarray:
     gram_matrix = np.zeros((song_count, song_count))
 
     # precompute d_js
-    gmms = map(init_gmm, samples_gmm)
+    gmms = list(map(init_gmm, samples_gmm))
+
     for i, x in enumerate(gmms):
         for j, y in enumerate(gmms):
 
             # only compute half of the matrix, because js is symmetric
             # the other half will be copied
-            if j <= i:
-                gram_matrix[i, j] = gmm_js(x, y)
+            if j >= i:
+                gram_matrix[i, j] = gmm_js(x, y)        
             else:
                 gram_matrix[i, j] = gram_matrix[j, i]
 
@@ -81,17 +76,12 @@ def train(songs: List[str], classes: List[int]) -> Tuple[svm.SVC, List[np.ndarra
     print('Applying rbf')
     gram_matrix = vectorized_kernel(gram_matrix)
 
-    svc = svm.SVC(kernel='precomputed')
+    svc = svm.SVC(kernel='precomputed', probability=True)
 
     print('Training SVC')
     svc.fit(gram_matrix, classes)
 
     return svc, gmm_parameters
-
-
-MusicSimModel = namedtuple(
-    'MusicSimModel', ('gmm_parameters', 'classes', 'class_names', 'svc')
-)
 
 
 def train_and_store(songs: List[str], classes: List[int], class_names: List[str], path: str, filename: str):
@@ -136,3 +126,21 @@ def train_and_store(songs: List[str], classes: List[int], class_names: List[str]
     except Exception as e:
         print('Exception occured during training:')
         print(e)
+
+
+def main():
+    s = ['data/songs/Dragon Ball.wav', 'data/songs/Akagami no Shirayuki-hime.wav']
+    c = [1, 2]
+
+    svc, gmm_parameters = train(s, c)
+    
+    # TODO: check why classes are flipped while similarities are correct
+    
+    model = MusicSimModel(gmm_parameters, c, ['shounen', 'shoujo'], svc)
+
+    model.load()
+    print(model.predict_file(['data/songs/Dragon Ball.wav', 'data/songs/Akagami no Shirayuki-hime.wav']))
+
+
+if __name__ == "__main__":
+    main()
