@@ -6,3 +6,4 @@ jupyter
 numpy
 matplotlib
 scikit-learn
+tqdm

@@ -6,24 +6,80 @@ of each song in the initial dataset.
 """
 import pickle
 import pathlib
+import threading
+from multiprocessing import Pool, freeze_support
 from typing import List, Tuple
 from collections import namedtuple
 
 import numpy as np
 from sklearn import svm
+from tqdm.notebook import tqdm
 
 from processing import convert_to_mfcc
 from classification import gmm_js, fit_gmm, init_gmm, MusicSimModel
 
 
-def compute_gmm_parameters(songs: List[str]) -> List[np.ndarray]:
+def _gmm_worker(songs, worker_id=0):
+    """
+    Worker for computing gmms.
+
+    :param songs: list of paths to each song.
+    :param worker_id: worker to display in progress bar.
+    """
+    gmms = []
+
+    # HACK: workaround for multiprocessing/tqdm in jupyter
+    print(' ', end='', flush=True)
+
+    for song in tqdm(songs, position=worker_id, desc=f'worker {worker_id}'):
+        gmms.append(fit_gmm(convert_to_mfcc(song, frames=30000)))
+
+    return gmms
+
+
+def compute_gmm_parameters(songs: List[str], processes: int = 1) -> List[np.ndarray]:
     """
     Computes gaussian mixture parameters for each given song.
 
     :param songs: list of paths to each song.
+    :param processes: number of parallel processes to run.
     :return: list of gmm parameters for each song.
     """
-    return list(map(lambda x: fit_gmm(convert_to_mfcc(x, frames=30000)), songs))
+    if processes < 0 or type(processes) is not int:
+        raise ValueError('Number of processes must be a postive integer.')
+
+    print(f'Computing Gaussian Mixture Models with procceses={processes}')
+
+    if processes == 1:
+        return _gmm_worker(songs)
+
+    freeze_support()
+    
+    pool = Pool(processes=processes, initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),))
+
+    # floor the partition size
+    partition_size = int(len(songs) / processes)
+    results = []
+
+    for i in range(processes - 1):
+        partition = songs[i*partition_size:i*partition_size + partition_size]
+        results.append(pool.apply_async(_gmm_worker, (partition, i)))
+
+    # add final partition
+    # add remaining songs in the event that len(songs) / processes is a fraction
+    final_partition = (processes - 1)*partition_size
+    results.append(
+        pool.apply_async(_gmm_worker, (songs[final_partition:], processes - 1))
+    )
+
+    all_gmms = []
+
+    # join all futures in order
+    for result in results:
+        result.wait()
+        all_gmms.extend(result.get())
+
+    return all_gmms
 
 
 def compute_gram_matrix(samples_gmm: List[np.ndarray]) -> np.ndarray:
@@ -40,20 +96,21 @@ def compute_gram_matrix(samples_gmm: List[np.ndarray]) -> np.ndarray:
     # precompute d_js
     gmms = list(map(init_gmm, samples_gmm))
 
-    for i, x in enumerate(gmms):
+    print('Computing svc gramm matrix')
+    for i, x in tqdm(enumerate(gmms)):
         for j, y in enumerate(gmms):
 
             # only compute half of the matrix, because js is symmetric
             # the other half will be copied
             if j >= i:
-                gram_matrix[i, j] = gmm_js(x, y)        
+                gram_matrix[i, j] = gmm_js(x, y)
             else:
                 gram_matrix[i, j] = gram_matrix[j, i]
 
     return gram_matrix
 
 
-def train(songs: List[str], classes: List[int]) -> Tuple[svm.SVC, List[np.ndarray]]:
+def train(songs: List[str], classes: List[int], processes: int = 1) -> Tuple[svm.SVC, List[np.ndarray]]:
     """
     Fits an SCV on the given songs.
 
@@ -62,8 +119,7 @@ def train(songs: List[str], classes: List[int]) -> Tuple[svm.SVC, List[np.ndarra
         [1, unique_classes].
     :return: SVC and gmm_parameters for storing.
     """
-    print('Computing Gaussian Mixture Models and svc gramm matrix')
-    gmm_parameters = compute_gmm_parameters(songs)
+    gmm_parameters = compute_gmm_parameters(songs, processes)
     gram_matrix = compute_gram_matrix(gmm_parameters)
 
     # apply custom rbf kernel
@@ -133,13 +189,14 @@ def main():
     c = [1, 2]
 
     svc, gmm_parameters = train(s, c)
-    
+
     # TODO: check why classes are flipped while similarities are correct
-    
+
     model = MusicSimModel(gmm_parameters, c, ['shounen', 'shoujo'], svc)
 
     model.load()
-    print(model.predict_file(['data/songs/Dragon Ball.wav', 'data/songs/Akagami no Shirayuki-hime.wav']))
+    print(model.predict_file(
+        ['data/songs/Dragon Ball.wav', 'data/songs/Akagami no Shirayuki-hime.wav']))
 
 
 if __name__ == "__main__":
