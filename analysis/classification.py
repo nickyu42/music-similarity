@@ -145,6 +145,15 @@ class MusicSimModel:
         self.kernel = self.create_kernel()
 
     def predict_file(self, x, n_comp=20):
+        """
+        Predicts the class of the given list of samples.
+
+        :param x: list of strings, where each string is the path to a file.
+        :param n_comp: number of mfcc components to use, should be equal to
+            what has been used for training the dataset.
+        :return: list of tuples, where each tuple has the probability that that
+            sample is of that class and the predicted class.
+        """
         if self.gmms is None:
             self.load()
 
@@ -165,8 +174,6 @@ class MusicSimModel:
         results = []
         for sample in predict:
             max_prob_index = np.argmax(sample)
-            print(max_prob_index)
-            predicted_class = self.class_names[max_prob_index]
-            results.append((sample[max_prob_index], predicted_class))
+            results.append((sample[max_prob_index], max_prob_index))
 
         return results
