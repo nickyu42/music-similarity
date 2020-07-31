@@ -202,22 +202,3 @@ def train_and_store(songs: List[str], classes: List[int], class_names: List[str]
     except Exception as e:
         print('Exception occured during training:')
         print(e)
-
-
-def main():
-    s = ['data/songs/Dragon Ball.wav', 'data/songs/Akagami no Shirayuki-hime.wav']
-    c = [1, 2]
-
-    svc, gmm_parameters = train(s, c)
-
-    # TODO: check why classes are flipped while similarities are correct
-
-    model = MusicSimModel(gmm_parameters, c, ['shounen', 'shoujo'], svc)
-
-    model.load()
-    print(model.predict_file(
-        ['data/songs/Dragon Ball.wav', 'data/songs/Akagami no Shirayuki-hime.wav']))
-
-
-if __name__ == "__main__":
-    main()
