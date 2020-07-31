@@ -10,6 +10,8 @@ import math
 import scipy.io.wavfile
 from scipy.fftpack import dct
 
+EPSILON = 1e-20
+
 
 def convert_to_mfcc(audio_file, frames=None, frame_size=0.025, frame_overlap=0.01, n_coeff=26, n_ceps=12):
     """
@@ -48,6 +50,9 @@ def convert_to_mfcc(audio_file, frames=None, frame_size=0.025, frame_overlap=0.0
     filterbanks = create_filter_bank(sample_rate, n_coeff, nfft)
 
     filterbanks = np.dot(result_signal.T, filterbanks.T).T
+
+    # replace zeros with epsilon value to prevent division by zero in log10
+    filterbanks[filterbanks == 0.0] = EPSILON
 
     return np.nan_to_num(dct(np.log10(filterbanks), axis=0)[1:n_ceps + 1])
 

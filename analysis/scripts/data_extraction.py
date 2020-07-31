@@ -23,9 +23,9 @@ SAMPLE_SIZE = 200
 
 WAIT_T = 1
 
-MAL_PATH = 'data/AnimeList.csv'
-PICKLE_PATH = 'data/animethemes_wiki.pickle'
-CRED_PATH = 'data/credentials.json'
+MAL_PATH = '../data/AnimeList.csv'
+PICKLE_PATH = '../data/animethemes_wiki.pickle'
+CRED_PATH = '../data/credentials.json'
 LOG_PATH = 'log.txt'
 SAVE_PATH = 'songs'
 

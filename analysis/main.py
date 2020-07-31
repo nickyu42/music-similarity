@@ -3,28 +3,37 @@ Author: Nick Yu
 Date created: 11/11/2018
 """
 
-import math
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.io.wavfile
-from scipy.fftpack import dct
+from sklearn import svm
 
 from processing import convert_to_mfcc
-from classification import fit_gmm, init_gmm, gmm_js
-from sklearn import mixture
+from classification import gmm_js, fit_gmm, init_gmm
 
-mfcc1 = convert_to_mfcc('data/songs/Akagami no Shirayuki-hime.wav', frames=500)
-mfcc2 = convert_to_mfcc('data/songs/Dragon Ball.wav')
+samples = list()
+samples.append(convert_to_mfcc('data/songs/Akagami no Shirayuki-hime.wav', frames=3000))
+samples.append(convert_to_mfcc('data/songs/Dragon Ball.wav', frames=3000))
 
-plt.pcolormesh(np.real(mfcc1))
-plt.show()
+# plt.pcolormesh(np.real(mfcc1))
+# plt.show()
 
-gmix1 = mixture.GaussianMixture(n_components=20, covariance_type='full')
-gmix1.fit(np.nan_to_num(mfcc1.real).T)
+gram_matrix = np.zeros((2, 2))
 
-gmix2 = mixture.GaussianMixture(n_components=20, covariance_type='full')
-gmix2.fit(np.nan_to_num(mfcc2.real).T)
+# precompute d_js
+for i, x in enumerate(samples):
+    for j, y in enumerate(samples):
+        gram_matrix[i, j] = gmm_js(init_gmm(fit_gmm(x)), init_gmm(fit_gmm(y)))
 
-print(gmm_js(gmix1, gmix2))
 
+# apply custom rbf kernel
+def kernel(js: float, gamma: float = 0.1):
+    return np.exp(-gamma * js)
+
+
+gram_matrix = np.vectorize(kernel)(gram_matrix)
+
+svc = svm.SVC(kernel='precomputed')
+svc.fit(gram_matrix, [1, 2])
+
+res = svc.predict(gram_matrix[1, :].reshape(1, -1))
 

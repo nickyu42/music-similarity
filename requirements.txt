@@ -1,0 +1,9 @@
+scipy
+pandas
+beautifulsoup4
+praw
+jupyter
+numpy
+matplotlib
+scikit-learn
+tqdm
