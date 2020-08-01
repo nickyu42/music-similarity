@@ -3,3 +3,4 @@
 __pycache__
 analysis/data/credentials.json
 venv
+.vscode

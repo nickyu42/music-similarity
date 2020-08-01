@@ -1,7 +1,7 @@
 """
-Module for training and storing a model.
+Module for training and storing a model.  
 
-The model consists of the SVM parameters, but also the gmm parameters 
+The model consists of the SVM parameters, but also the gmm parameters  
 of each song in the initial dataset.
 """
 import pickle
@@ -15,8 +15,8 @@ import numpy as np
 from sklearn import svm
 from tqdm.notebook import tqdm
 
-from processing import convert_to_mfcc
-from classification import gmm_js, fit_gmm, init_gmm, MusicSimModel
+from .processing import convert_to_mfcc
+from .classification import gmm_js, fit_gmm, init_gmm, MusicSimModel
 
 
 def _gmm_worker(songs, class_labels, worker_id=0):

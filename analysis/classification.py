@@ -1,6 +1,6 @@
 """
-Author: Nick Yu
-Date created: 1/3/2019
+Author: Nick Yu  
+Date created: 1/3/2019  
 
 Shounen/ Shoujo classifier
 """
@@ -8,7 +8,7 @@ from typing import Callable
 import numpy as np
 from sklearn import mixture
 
-from processing import convert_to_mfcc
+from .processing import convert_to_mfcc
 
 
 def fit_gmm(mfcc, n_comp=20):

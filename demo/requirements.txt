@@ -1,5 +1,4 @@
 scipy
-jupyter
 numpy
 scikit-learn
 tqdm
