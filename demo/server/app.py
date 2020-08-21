@@ -29,6 +29,9 @@ def song():
 
 
 def load_model():
+    if 'MODEL_PATH' not in os.environ:
+        raise ValueError('Environment variable MODEL_PATH not set')
+
     model_path = pathlib.Path(os.environ.get('MODEL_PATH'))
 
     if not model_path.is_file():
@@ -41,6 +44,8 @@ def load_model():
 def create_app():
     app = Flask(__name__)
     app.register_blueprint(main_page)
-    app.config['MODEL'] = load_model()
+
+    if os.environ.get('FLASK_ENV') == 'production':
+        app.config['MODEL'] = load_model()
 
     return app
