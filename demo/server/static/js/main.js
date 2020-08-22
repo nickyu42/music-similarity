@@ -1,12 +1,14 @@
-const form = document.querySelector('form')
-
-form.addEventListener('submit', (e) => {
+function handleFileUpload(e) {
     e.preventDefault();
 
-    const formData = new FormData();
+    const files = document.getElementById('upload-file').files;
 
-    const files = document.querySelector('[type=file]').files;
-    formData.append('file', files[0]);
+    if (files.length === 0) {
+        console.error('Runtime error occured: no file is selected');
+    }
+
+    const formData = new FormData();
+    formData.append('song', files[0]);
 
     const requestBody = {
         method: 'POST',
@@ -18,4 +20,12 @@ form.addEventListener('submit', (e) => {
             console.log(json)
         });
     });
-})
+}
+
+// Add event listener to handle when a file is selected
+document.getElementById('upload-file').addEventListener('change', handleFileUpload);
+
+// Add event listener to upload-button and make it trigger the file dialog
+document.getElementById('upload-button').addEventListener('click', () => {
+    document.getElementById('upload-file').click();
+});
