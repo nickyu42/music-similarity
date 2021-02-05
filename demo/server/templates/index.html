@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}" />
+
+  <title>Demo</title>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="page-header text-center">
+          <h1>
+            Shōnen or Shōjo?
+          </h1>
+        </div>
+        <!-- <div class="row d-flex justify-content-center">
+            <div class="col-md-5 text-center">
+              <img alt="Bootstrap Image Preview" src="https://www.layoutit.com/img/sports-q-c-140-140-3.jpg" />
+            </div>
+            <div class="col-md-2 text-center">
+              <h3>
+                Or
+              </h3>
+            </div>
+            <div class="col-md-5 text-center">
+              <img alt="Bootstrap Image Preview" src="https://www.layoutit.com/img/sports-q-c-140-140-3.jpg" />
+            </div>
+          </div>
+          <dl> -->
+        <div id="description">
+          <h4>What is this?</h4>
+          <p>Lorem Ipsum</p>
+
+          <h4>What are Shōnen/Shōjo?</h4>
+          <p>Lorem Ipsum</p>
+
+          <h4>Demo?</h4>
+          <p>Lorem Ipsum</p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+          <input type="file" name="song" id="upload-file" accept=".wav,.mp3" hidden />
+          <input type="button" value="Select song" id="upload-button" class="btn btn-secondary" />
+        </form>
+
+        <p>
+          Source code available on <a href="https://github.com/nickyu42/music-similarity">Github</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="http://code.jquery.com/jquery-3.5.1.slim.min.js"
+    integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs=" 
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+    integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+    integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+    crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

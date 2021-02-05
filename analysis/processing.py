@@ -1,6 +1,6 @@
 """
-Author: Nick Yu
-Date created: 13/11/2018
+Author: Nick Yu  
+Date created: 13/11/2018  
 
 Module for processing audio
 """

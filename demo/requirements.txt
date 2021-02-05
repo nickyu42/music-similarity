@@ -1,0 +1,7 @@
+scipy
+numpy
+scikit-learn
+tqdm
+flask
+python-dotenv
+cachetools
